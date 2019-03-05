@@ -41,6 +41,10 @@ func (pt *PodTemplate) toKubeV1(apiVersion string) (*v1.PodSpec, error) {
 	}
 
 	var initContainers []v1.Container
+
+	if pt.InitContainers != nil {
+		initContainers = make([]v1.Container, 0)
+	}
 	for _, container := range pt.InitContainers {
 		kc, err := container.ToKube("v1")
 		if err != nil {
@@ -52,6 +56,10 @@ func (pt *PodTemplate) toKubeV1(apiVersion string) (*v1.PodSpec, error) {
 	spec.InitContainers = initContainers
 
 	var kubeContainers []v1.Container
+
+	if pt.Containers != nil {
+		kubeContainers = make([]v1.Container, 0)
+	}
 	for _, container := range pt.Containers {
 		kc, err := container.ToKube("v1")
 		if err != nil {
@@ -129,7 +137,11 @@ func (pt *PodTemplate) toKubeV1(apiVersion string) (*v1.PodSpec, error) {
 }
 
 func (pt *PodTemplate) toKubeVolumesV1() ([]v1.Volume, error) {
-	kubeVolumes := []v1.Volume{}
+	var kubeVolumes []v1.Volume
+
+	if pt.Volumes != nil {
+		kubeVolumes = make([]v1.Volume, 0)
+	}
 
 	for name, vol := range pt.Volumes {
 		v, err := vol.ToKube("v1")
@@ -146,6 +158,10 @@ func (pt *PodTemplate) toKubeVolumesV1() ([]v1.Volume, error) {
 
 func (pt *PodTemplate) toKubeHostAliasesV1() ([]v1.HostAlias, error) {
 	var hostAliases []v1.HostAlias
+
+	if pt.HostAliases != nil {
+		hostAliases = []v1.HostAlias{}
+	}
 
 	for _, alias := range pt.HostAliases {
 		hostAlias, err := alias.ToKube("v1")
@@ -218,6 +234,10 @@ func (pt *PodTemplate) toKubeHostModesV1() (net bool, pid bool, ipc bool, err er
 func (pt *PodTemplate) toKubeRegistriesV1() []v1.LocalObjectReference {
 	var kubeRegistries []v1.LocalObjectReference
 
+	if pt.Registries != nil {
+		kubeRegistries = make([]v1.LocalObjectReference, 0)
+	}
+
 	for _, reg := range pt.Registries {
 		ref := v1.LocalObjectReference{
 			Name: reg,
@@ -230,6 +250,10 @@ func (pt *PodTemplate) toKubeRegistriesV1() []v1.LocalObjectReference {
 
 func (pt *PodTemplate) toKubeTolerationsV1() ([]v1.Toleration, error) {
 	var tolerations []v1.Toleration
+
+	if pt.Tolerations != nil {
+		tolerations = make([]v1.Toleration, 0)
+	}
 
 	for _, t := range pt.Tolerations {
 		tol, err := t.ToKube("v1")
@@ -245,11 +269,26 @@ func (pt *PodTemplate) toKubeTolerationsV1() ([]v1.Toleration, error) {
 }
 
 func (pt *PodTemplate) toKubeDNSConfigV1() *v1.PodDNSConfig {
-	if len(pt.Nameservers) == 0 && len(pt.SearchDomains) == 0 && len(pt.ResolverOptions) == 0 {
+	var ns []string
+	var ds []string
+	var options []v1.PodDNSConfigOption
+
+	if pt.Nameservers == nil && pt.SearchDomains == nil && pt.ResolverOptions == nil {
 		return nil
 	}
 
-	options := []v1.PodDNSConfigOption{}
+	if pt.Nameservers != nil && len(pt.Nameservers) > 0 {
+		ns = pt.Nameservers
+	}
+
+	if pt.SearchDomains != nil && len(pt.SearchDomains) > 0 {
+		ds = pt.SearchDomains
+	}
+
+	if pt.ResolverOptions != nil && len(pt.ResolverOptions) > 0 {
+		options = []v1.PodDNSConfigOption{}
+	}
+
 	for _, opt := range pt.ResolverOptions {
 		o := v1.PodDNSConfigOption{
 			Name:  opt.Name,
@@ -259,8 +298,8 @@ func (pt *PodTemplate) toKubeDNSConfigV1() *v1.PodDNSConfig {
 	}
 
 	return &v1.PodDNSConfig{
-		Nameservers: pt.Nameservers,
-		Searches:    pt.SearchDomains,
+		Nameservers: ns,
+		Searches:    ds,
 		Options:     options,
 	}
 }
@@ -268,8 +307,8 @@ func (pt *PodTemplate) toKubeDNSConfigV1() *v1.PodDNSConfig {
 func (pt *PodTemplate) toKubePodReadinessGatesV1() []v1.PodReadinessGate {
 	var readinessGates []v1.PodReadinessGate
 
-	if len(pt.Gates) > 0 {
-		readinessGates = []v1.PodReadinessGate{}
+	if pt.Gates != nil {
+		readinessGates = make([]v1.PodReadinessGate, 0)
 	}
 
 	for _, gate := range pt.Gates {

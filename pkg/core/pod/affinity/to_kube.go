@@ -22,25 +22,19 @@ func (a *Affinity) ToKube(version string) (interface{}, error) {
 }
 
 func (a *Affinity) toKubeV1() (*v1.Affinity, error) {
-	var nodeAffinity *v1.NodeAffinity
-	var podAffinity *v1.PodAffinity
-	var podAntiAffinity *v1.PodAntiAffinity
-
-	if a != nil {
-		nodeAffinity = a.toKubeNodeAffinityV1(a.NodeAffinity)
-		podAffinity = a.toKubePodAffinityV1(a.PodAffinity)
-		podAntiAffinity = a.toKubePodAntiAffinityV1(a.PodAntiAffinity)
+	if a == nil {
+		return nil, nil
 	}
 
-	if podAffinity != nil || podAntiAffinity != nil || nodeAffinity != nil {
-		return &v1.Affinity{
-			NodeAffinity:    nodeAffinity,
-			PodAffinity:     podAffinity,
-			PodAntiAffinity: podAntiAffinity,
-		}, nil
-	}
+	nodeAffinity := a.toKubeNodeAffinityV1(a.NodeAffinity)
+	podAffinity := a.toKubePodAffinityV1(a.PodAffinity)
+	podAntiAffinity := a.toKubePodAntiAffinityV1(a.PodAntiAffinity)
 
-	return nil, nil
+	return &v1.Affinity{
+		NodeAffinity:    nodeAffinity,
+		PodAffinity:     podAffinity,
+		PodAntiAffinity: podAntiAffinity,
+	}, nil
 }
 
 func (a *Affinity) toKubePodAffinityV1(affinities map[AffinityType][]PodTerm) *v1.PodAffinity {
