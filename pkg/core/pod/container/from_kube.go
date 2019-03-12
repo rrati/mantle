@@ -9,9 +9,9 @@ import (
 	"mantle/pkg/core/pod/container/port"
 	"mantle/pkg/core/pod/container/probe"
 	"mantle/pkg/core/pod/container/resources"
+	"mantle/pkg/core/pod/container/volumedevice"
 	"mantle/pkg/core/pod/container/volumemount"
 	"mantle/pkg/core/selinux"
-	"mantle/pkg/util"
 	"mantle/pkg/util/floatstr"
 
 	"k8s.io/api/core/v1"
@@ -65,12 +65,7 @@ func fromKubeContainerV1(container *v1.Container) (*Container, error) {
 	if container.SecurityContext != nil {
 		mantleContainer.Privileged = container.SecurityContext.Privileged
 		mantleContainer.AllowEscalation = container.SecurityContext.AllowPrivilegeEscalation
-
-		if container.SecurityContext.ReadOnlyRootFilesystem != nil {
-			mantleContainer.RO = container.SecurityContext.ReadOnlyRootFilesystem
-			mantleContainer.RW = util.BoolPtrOrNil(!(*mantleContainer.RO))
-		}
-
+		mantleContainer.RO = container.SecurityContext.ReadOnlyRootFilesystem
 		mantleContainer.ForceNonRoot = container.SecurityContext.RunAsNonRoot
 		mantleContainer.UID = container.SecurityContext.RunAsUser
 		mantleContainer.GID = container.SecurityContext.RunAsGroup
@@ -82,6 +77,14 @@ func fromKubeContainerV1(container *v1.Container) (*Container, error) {
 		mantleContainer.SELinux = sel
 
 		mantleContainer.AddCapabilities, mantleContainer.DelCapabilities = fromKubeCapabilitiesV1(container.SecurityContext.Capabilities)
+
+		if container.SecurityContext.ProcMount != nil {
+			procMount, err := fromKubeProcMountV1(container.SecurityContext.ProcMount)
+			if err != nil {
+				return nil, err
+			}
+			mantleContainer.ProcMount = &procMount
+		}
 	}
 
 	livenessProbe, err := probe.NewProbeFromKubeProbe(container.LivenessProbe)
@@ -128,8 +131,13 @@ func fromKubeContainerV1(container *v1.Container) (*Container, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	mantleContainer.VolumeMounts = volumeMounts
+
+	volumeDevices, err := fromKubeVolumeDevicesV1(container.VolumeDevices)
+	if err != nil {
+		return nil, err
+	}
+	mantleContainer.VolumeDevices = volumeDevices
 
 	return mantleContainer, nil
 }
@@ -273,4 +281,29 @@ func fromKubeVolumeMountsV1(kubeMounts []v1.VolumeMount) ([]volumemount.VolumeMo
 	}
 
 	return mounts, nil
+}
+
+func fromKubeVolumeDevicesV1(kubeDevices []v1.VolumeDevice) ([]volumedevice.VolumeDevice, error) {
+	devices := []volumedevice.VolumeDevice{}
+
+	for _, device := range kubeDevices {
+		d, err := volumedevice.NewVolumeDeviceFromKubeVolumeDevice(device)
+		if err != nil {
+			return nil, err
+		}
+		devices = append(devices, *d)
+	}
+
+	return devices, nil
+}
+
+func fromKubeProcMountV1(procMount *v1.ProcMountType) (MountType, error) {
+	switch *procMount {
+	case v1.DefaultProcMount:
+		return MountTypeDefault, nil
+	case v1.UnmaskedProcMount:
+		return MountTypeUnmasked, nil
+	default:
+		return MountTypeInvalid, fmt.Errorf("unknown ProcMountType: %s", *procMount)
+	}
 }

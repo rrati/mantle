@@ -74,7 +74,8 @@ func fromKubePodV1(pod *v1.Pod) (*Pod, error) {
 	}
 	mantlePod.Conditions = conditions
 
-	fromKubeContainerStatusV1(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses, mantlePod.Containers)
+	fromKubeContainerStatusV1(pod.Status.InitContainerStatuses, mantlePod.InitContainers)
+	fromKubeContainerStatusV1(pod.Status.ContainerStatuses, mantlePod.Containers)
 
 	return mantlePod, nil
 }
@@ -172,10 +173,8 @@ func fromKubeConditionStatusV1(status v1.ConditionStatus) (ConditionStatus, erro
 	}
 }
 
-func fromKubeContainerStatusV1(initContainerStatuses, containerStatuses []v1.ContainerStatus, containers []Container) {
-	allContainerStatuses := append(initContainerStatuses, containerStatuses...)
-
-	for _, status := range allContainerStatuses {
+func fromKubeContainerStatusV1(containerStatuses []v1.ContainerStatus, containers []Container) {
+	for _, status := range containerStatuses {
 		for _, container := range containers {
 			if container.Name == status.Name {
 				container.Restarts = status.RestartCount

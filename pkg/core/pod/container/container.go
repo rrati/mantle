@@ -1,11 +1,14 @@
 package container
 
 import (
+	"fmt"
+
 	"mantle/pkg/core/action"
 	"mantle/pkg/core/pod/container/env"
 	"mantle/pkg/core/pod/container/port"
 	"mantle/pkg/core/pod/container/probe"
 	"mantle/pkg/core/pod/container/resources"
+	"mantle/pkg/core/pod/container/volumedevice"
 	"mantle/pkg/core/pod/container/volumemount"
 	"mantle/pkg/core/selinux"
 	"mantle/pkg/util/floatstr"
@@ -14,42 +17,45 @@ import (
 )
 
 type Container struct {
-	Command              []string                  `json:"command,omitempty"`
-	Args                 []floatstr.FloatOrString  `json:"args,omitempty"`
-	Env                  []env.Env                 `json:"env,omitempty"`
-	Image                string                    `json:"image"`
-	Pull                 PullPolicy                `json:"pull,omitempty"`
-	OnStart              *action.Action            `json:"on_start,omitempty"`
-	PreStop              *action.Action            `json:"pre_stop,omitempty"`
-	CPU                  *resources.CPU            `json:"cpu,omitempty"`
-	Mem                  *resources.Mem            `json:"mem,omitempty"`
-	Name                 string                    `json:"name,omitempty"`
-	AddCapabilities      []string                  `json:"cap_add,omitempty"`
-	DelCapabilities      []string                  `json:"cap_drop,omitempty"`
-	Privileged           *bool                     `json:"privileged,omitempty"`
-	AllowEscalation      *bool                     `json:"allow_escalation,omitempty"`
-	RW                   *bool                     `json:"rw,omitempty"`
-	RO                   *bool                     `json:"ro,omitempty"`
-	ForceNonRoot         *bool                     `json:"force_non_root,omitempty"`
-	UID                  *int64                    `json:"uid,omitempty"`
-	GID                  *int64                    `json:"gid,omitempty"`
-	SELinux              *selinux.SELinux          `json:"selinux,omitempty"`
-	LivenessProbe        *probe.Probe              `json:"liveness_probe,omitempty"`
-	ReadinessProbe       *probe.Probe              `json:"readiness_probe,omitempty"`
-	Expose               []port.Port               `json:"expose,omitempty"`
-	Stdin                bool                      `json:"stdin,omitempty"`
-	StdinOnce            bool                      `json:"stdin_once,omitempty"`
-	TTY                  bool                      `json:"tty,omitempty"`
-	WorkingDir           string                    `json:"wd,omitempty"`
-	TerminationMsgPath   string                    `json:"termination_msg_path,omitempty"`
-	TerminationMsgPolicy TerminationMessagePolicy  `json:"termination_msg_policy,omitempty"`
-	ContainerID          string                    `json:"container_id,omitempty"`
-	ImageID              string                    `json:"image_id,omitempty"`
-	Ready                bool                      `json:"ready,omitempty"`
-	LastState            *ContainerState           `json:"last_state,omitempty"`
-	CurrentState         *ContainerState           `json:"current_state,omitempty"`
-	VolumeMounts         []volumemount.VolumeMount `json:"volume,omitempty"`
-	Restarts             int32                     `json:"restarts,omitempty"`
+	Command              []string                    `json:"command,omitempty"`
+	Args                 []floatstr.FloatOrString    `json:"args,omitempty"`
+	Env                  []env.Env                   `json:"env,omitempty"`
+	Image                string                      `json:"image"`
+	Pull                 PullPolicy                  `json:"pull,omitempty"`
+	OnStart              *action.Action              `json:"on_start,omitempty"`
+	PreStop              *action.Action              `json:"pre_stop,omitempty"`
+	CPU                  *resources.CPU              `json:"cpu,omitempty"`
+	Mem                  *resources.Mem              `json:"mem,omitempty"`
+	Name                 string                      `json:"name,omitempty"`
+	AddCapabilities      []string                    `json:"cap_add,omitempty"`
+	DelCapabilities      []string                    `json:"cap_drop,omitempty"`
+	Privileged           *bool                       `json:"privileged,omitempty"`
+	AllowEscalation      *bool                       `json:"allow_escalation,omitempty"`
+	RO                   *bool                       `json:"ro,omitempty"`
+	ForceNonRoot         *bool                       `json:"force_non_root,omitempty"`
+	UID                  *int64                      `json:"uid,omitempty"`
+	GID                  *int64                      `json:"gid,omitempty"`
+	SELinux              *selinux.SELinux            `json:"selinux,omitempty"`
+	LivenessProbe        *probe.Probe                `json:"liveness_probe,omitempty"`
+	ReadinessProbe       *probe.Probe                `json:"readiness_probe,omitempty"`
+	Expose               []port.Port                 `json:"expose,omitempty"`
+	Stdin                bool                        `json:"stdin,omitempty"`
+	StdinOnce            bool                        `json:"stdin_once,omitempty"`
+	TTY                  bool                        `json:"tty,omitempty"`
+	ProcMount            *MountType                  `json:"procMount,omitempty"`
+	WorkingDir           string                      `json:"wd,omitempty"`
+	TerminationMsgPath   string                      `json:"termination_msg_path,omitempty"`
+	TerminationMsgPolicy TerminationMessagePolicy    `json:"termination_msg_policy,omitempty"`
+	VolumeMounts         []volumemount.VolumeMount   `json:"volume,omitempty"`
+	VolumeDevices        []volumedevice.VolumeDevice `json:"device,omitempty `
+
+	// Status
+	ContainerID  string          `json:"container_id,omitempty"`
+	ImageID      string          `json:"image_id,omitempty"`
+	Ready        bool            `json:"ready,omitempty"`
+	LastState    *ContainerState `json:"last_state,omitempty"`
+	CurrentState *ContainerState `json:"current_state,omitempty"`
+	Restarts     int32           `json:"restarts,omitempty"`
 }
 
 type ContainerState struct {
@@ -92,3 +98,24 @@ const (
 	PullIfNotPresent
 	PullDefault
 )
+
+type MountType int
+
+const (
+	MountTypeDefault MountType = iota
+	MountTypeUnmasked
+	MountTypeInvalid
+)
+
+func (m *MountType) ToString() string {
+	switch *m {
+	case MountTypeDefault:
+		return "MountTypeDefault"
+	case MountTypeUnmasked:
+		return "MountTypeUnmasked"
+	case MountTypeInvalid:
+		return "MountTypeInvalid"
+	default:
+		return fmt.Sprintf("unknown mount type: %d", *m)
+	}
+}

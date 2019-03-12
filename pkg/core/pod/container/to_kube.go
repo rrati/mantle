@@ -5,10 +5,6 @@ import (
 	"reflect"
 	"strings"
 
-	"mantle/pkg/util"
-
-	serrors "github.com/koki/structurederrors"
-
 	"k8s.io/api/core/v1"
 
 	"github.com/imdario/mergo"
@@ -80,6 +76,12 @@ func (c *Container) toKubeV1() (v1.Container, error) {
 		return v1.Container{}, err
 	}
 	kubeContainer.VolumeMounts = vm
+
+	vd, err := c.toKubeVolumeDeviceV1()
+	if err != nil {
+		return v1.Container{}, err
+	}
+	kubeContainer.VolumeDevices = vd
 
 	kubeContainer.Stdin = c.Stdin
 	kubeContainer.StdinOnce = c.StdinOnce
@@ -246,6 +248,21 @@ func (c *Container) toKubeVolumeMountV1() ([]v1.VolumeMount, error) {
 	return kubeMounts, nil
 }
 
+func (c *Container) toKubeVolumeDeviceV1() ([]v1.VolumeDevice, error) {
+	var kubeDevices []v1.VolumeDevice
+
+	for _, device := range c.VolumeDevices {
+		d, err := device.ToKube("v1")
+		if err != nil {
+			return nil, err
+		}
+		deviceV1 := d.(*v1.VolumeDevice)
+		kubeDevices = append(kubeDevices, *deviceV1)
+	}
+
+	return kubeDevices, nil
+}
+
 func (c *Container) toKubeLifecycleV1() (*v1.Lifecycle, error) {
 	var lc *v1.Lifecycle
 	var kubeOnStart *v1.Handler
@@ -292,15 +309,8 @@ func (c *Container) toKubeSecurityContextV1() (*v1.SecurityContext, error) {
 		mark = true
 	}
 
-	if c.RO != nil || c.RW != nil {
-		ro := util.FromBoolPtr(c.RO)
-		rw := util.FromBoolPtr(c.RW)
-
-		if !((!ro && rw) || (!rw && ro)) {
-			return nil, serrors.InvalidInstanceErrorf(c, "conflicting value (Read Only) %v and (ReadWrite) %v", ro, rw)
-		}
-
-		sc.ReadOnlyRootFilesystem = &ro
+	if c.RO != nil {
+		sc.ReadOnlyRootFilesystem = c.RO
 		mark = true
 	}
 
@@ -347,11 +357,31 @@ func (c *Container) toKubeSecurityContextV1() (*v1.SecurityContext, error) {
 		mark = true
 	}
 
+	if c.ProcMount != nil {
+		procMount, err := c.toKubeProcMountV1()
+		if err != nil {
+			return nil, err
+		}
+		sc.ProcMount = &procMount
+		mark = true
+	}
+
 	if !mark {
 		return nil, nil
 	}
 
 	return sc, nil
+}
+
+func (c *Container) toKubeProcMountV1() (v1.ProcMountType, error) {
+	switch *c.ProcMount {
+	case MountTypeDefault:
+		return v1.DefaultProcMount, nil
+	case MountTypeUnmasked:
+		return v1.UnmaskedProcMount, nil
+	default:
+		return "", fmt.Errorf("unknown MountType: %s", c.ProcMount.ToString())
+	}
 }
 
 // ToKube will return a kubernetes container status object of the api version provided
