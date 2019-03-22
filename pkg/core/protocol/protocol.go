@@ -5,4 +5,5 @@ type Protocol int
 const (
 	ProtocolTCP Protocol = iota
 	ProtocolUDP
+	ProtocolSCTP
 )

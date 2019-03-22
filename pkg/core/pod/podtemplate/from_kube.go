@@ -42,7 +42,7 @@ func fromKubePodSpecV1(kubeSpec v1.PodSpec) (*PodTemplate, error) {
 
 	a, err := affinity.NewAffinityFromKubeAffinity(kubeSpec.Affinity)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "affinity")
 	}
 	if a != nil {
 		mantlePod.Affinity = a
@@ -56,7 +56,7 @@ func fromKubePodSpecV1(kubeSpec v1.PodSpec) (*PodTemplate, error) {
 	for _, kubeContainer := range kubeSpec.InitContainers {
 		c, err := container.NewContainerFromKubeContainer(&kubeContainer)
 		if err != nil {
-			return nil, err
+			return nil, serrors.ContextualizeErrorf(err, "initContainer")
 		}
 		initContainers = append(initContainers, *c)
 	}
@@ -70,7 +70,7 @@ func fromKubePodSpecV1(kubeSpec v1.PodSpec) (*PodTemplate, error) {
 	for _, kubeContainer := range kubeSpec.Containers {
 		c, err := container.NewContainerFromKubeContainer(&kubeContainer)
 		if err != nil {
-			return nil, err
+			return nil, serrors.ContextualizeErrorf(err, "container")
 		}
 		containers = append(containers, *c)
 	}
@@ -78,13 +78,13 @@ func fromKubePodSpecV1(kubeSpec v1.PodSpec) (*PodTemplate, error) {
 
 	dnsPolicy, err := fromKubeDNSPolicyV1(kubeSpec.DNSPolicy)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "dns policy")
 	}
 	mantlePod.DNSPolicy = dnsPolicy
 
 	aliases, err := fromKubeHostAliasesV1(kubeSpec.HostAliases)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "host aliases")
 	}
 	mantlePod.HostAliases = aliases
 
@@ -95,7 +95,7 @@ func fromKubePodSpecV1(kubeSpec v1.PodSpec) (*PodTemplate, error) {
 
 	restartPolicy, err := fromKubeRestartPolicyV1(kubeSpec.RestartPolicy)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "restart policy")
 	}
 	mantlePod.RestartPolicy = restartPolicy
 
@@ -106,7 +106,7 @@ func fromKubePodSpecV1(kubeSpec v1.PodSpec) (*PodTemplate, error) {
 
 	tolerations, err := fromKubeTolerationsV1(kubeSpec.Tolerations)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "tolerations")
 	}
 	mantlePod.Tolerations = tolerations
 
@@ -125,7 +125,7 @@ func fromKubePodSpecV1(kubeSpec v1.PodSpec) (*PodTemplate, error) {
 			if container.SELinux == nil {
 				sel, err := selinux.NewSELinuxFromKubeSELinuxOptions(securityContext.SELinuxOptions)
 				if err != nil {
-					return nil, err
+					return nil, serrors.ContextualizeErrorf(err, "selinux")
 				}
 				container.SELinux = sel
 			}
@@ -144,7 +144,7 @@ func fromKubePodSpecV1(kubeSpec v1.PodSpec) (*PodTemplate, error) {
 	mantlePod.Nameservers, mantlePod.SearchDomains, mantlePod.ResolverOptions = fromKubePodDNSConfigV1(kubeSpec.DNSConfig)
 	gates, err := fromKubePodReadinessGateV1(kubeSpec.ReadinessGates)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "readiness gates")
 	}
 	mantlePod.Gates = gates
 	mantlePod.RuntimeClass = kubeSpec.RuntimeClassName

@@ -1,6 +1,25 @@
 package container
 
-var FullTestMantleContainer = container.Container{
+import (
+	"mantle/pkg/core/action"
+	"mantle/pkg/core/pod/container/env"
+	"mantle/pkg/core/pod/container/port"
+	"mantle/pkg/core/pod/container/probe"
+	"mantle/pkg/core/pod/container/resources"
+	"mantle/pkg/core/pod/container/volumedevice"
+	"mantle/pkg/core/pod/container/volumemount"
+	"mantle/pkg/core/protocol"
+	"mantle/pkg/core/selinux"
+	"mantle/pkg/util/floatstr"
+)
+
+var int64Val = int64(5)
+var boolEntry = true
+var int32Val = int32(1)
+var strEntry = "testStr"
+var mountType = MountTypeDefault
+var mountPropagation = volumemount.MountPropagationNone
+var FullTestMantleContainer = Container{
 	Command: []string{"cmd1", "cmd2"},
 	Args: []floatstr.FloatOrString{
 		{
@@ -32,7 +51,7 @@ var FullTestMantleContainer = container.Container{
 		},
 	},
 	Image: "registry.io/path/to/image",
-	Pull:  container.PullAlways,
+	Pull:  PullAlways,
 	OnStart: &action.Action{
 		ActionType: action.ActionTypeTCP,
 		Host:       "actionHost",
@@ -105,7 +124,7 @@ var FullTestMantleContainer = container.Container{
 	ProcMount:            &mountType,
 	WorkingDir:           "/path/to/dir",
 	TerminationMsgPath:   "/msg/path",
-	TerminationMsgPolicy: container.TerminationMessageReadFile,
+	TerminationMsgPolicy: TerminationMessageReadFile,
 	VolumeMounts: []volumemount.VolumeMount{
 		{
 			MountPath:   "/path/to/mount",
@@ -122,12 +141,12 @@ var FullTestMantleContainer = container.Container{
 	},
 }
 
-var EmptyTestMantleContainer = container.Container{
+var EmptyTestMantleContainer = Container{
 	Command:         []string{},
 	Args:            []floatstr.FloatOrString{},
 	Env:             []env.Env{},
 	Image:           "",
-	Pull:            container.PullDefault,
+	Pull:            PullDefault,
 	OnStart:         &action.Action{},
 	PreStop:         &action.Action{},
 	CPU:             &resources.CPU{},
@@ -153,7 +172,7 @@ var EmptyTestMantleContainer = container.Container{
 	ProcMount:            nil,
 	WorkingDir:           "",
 	TerminationMsgPath:   "",
-	TerminationMsgPolicy: container.TerminationMessageDefault,
+	TerminationMsgPolicy: TerminationMessageDefault,
 	VolumeMounts:         []volumemount.VolumeMount{},
 	VolumeDevices:        []volumedevice.VolumeDevice{},
 }

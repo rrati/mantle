@@ -27,6 +27,8 @@ func (p *Protocol) toKubeV1() (v1.Protocol, error) {
 		protocol = v1.Protocol("TCP")
 	case ProtocolUDP:
 		protocol = v1.Protocol("UDP")
+	case ProtocolSCTP:
+		protocol = v1.Protocol("SCTP")
 	}
 
 	return protocol, nil

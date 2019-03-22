@@ -41,13 +41,13 @@ func fromKubePodV1(pod *v1.Pod) (*Pod, error) {
 
 	templateMeta, err := NewPodTemplateMetaFromKubeObjectMeta(pod.ObjectMeta)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error converting PodTemplateMeta: %s", err)
 	}
 	mantlePod.PodTemplateMeta = *templateMeta
 
 	template, err := NewPodTemplateFromKubePodSpec(pod.Spec)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error converting PodTemplate: %s", err)
 	}
 	mantlePod.PodTemplate = *template
 
@@ -55,7 +55,7 @@ func fromKubePodV1(pod *v1.Pod) (*Pod, error) {
 	mantlePod.Reason = pod.Status.Reason
 	phase, err := fromKubePodPhaseV1(pod.Status.Phase)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error converting PodPhase: %s", err)
 	}
 	mantlePod.Phase = phase
 	mantlePod.IP = pod.Status.PodIP
@@ -64,13 +64,13 @@ func fromKubePodV1(pod *v1.Pod) (*Pod, error) {
 
 	qosClass, err := fromKubePodQOSClassV1(pod.Status.QOSClass)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error converting QOSClass: %s", err)
 	}
 	mantlePod.QOS = qosClass
 
 	conditions, err := fromKubePodConditionV1(pod.Status.Conditions)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error converting PodCondition: %s", err)
 	}
 	mantlePod.Conditions = conditions
 
@@ -138,13 +138,13 @@ func fromKubePodConditionV1(kubeConditions []v1.PodCondition) ([]PodCondition, e
 
 		typ, err := FromKubePodConditionTypeV1(kubeCondition.Type)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error converting PodConditionType: %s", err)
 		}
 		condition.Type = typ
 
 		status, err := fromKubeConditionStatusV1(kubeCondition.Status)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error converting ConditionStatus: %s", err)
 		}
 		condition.Status = status
 

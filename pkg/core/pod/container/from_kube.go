@@ -16,7 +16,7 @@ import (
 
 	"k8s.io/api/core/v1"
 
-	"github.com/imdario/mergo"
+	serrors "github.com/koki/structurederrors"
 )
 
 // NewContainerFromKubeContainer will create a new Container object with
@@ -45,20 +45,20 @@ func fromKubeContainerV1(container *v1.Container) (*Container, error) {
 
 	onStart, preStop, err := fromKubeLifeCycleV1(container.Lifecycle)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "life cycle")
 	}
 	mantleContainer.OnStart = onStart
 	mantleContainer.PreStop = preStop
 
 	cpu, err := resources.NewCPUFromKubeResourceRequirements(container.Resources)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "cpu resource requirements")
 	}
 	mantleContainer.CPU = cpu
 
 	mem, err := resources.NewMemFromKubeResourceRequirements(container.Resources)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "mem resource requirements")
 	}
 	mantleContainer.Mem = mem
 
@@ -72,7 +72,7 @@ func fromKubeContainerV1(container *v1.Container) (*Container, error) {
 
 		sel, err := selinux.NewSELinuxFromKubeSELinuxOptions(container.SecurityContext.SELinuxOptions)
 		if err != nil {
-			return nil, err
+			return nil, serrors.ContextualizeErrorf(err, "selinux options")
 		}
 		mantleContainer.SELinux = sel
 
@@ -81,7 +81,7 @@ func fromKubeContainerV1(container *v1.Container) (*Container, error) {
 		if container.SecurityContext.ProcMount != nil {
 			procMount, err := fromKubeProcMountV1(container.SecurityContext.ProcMount)
 			if err != nil {
-				return nil, err
+				return nil, serrors.ContextualizeErrorf(err, "proc mount")
 			}
 			mantleContainer.ProcMount = &procMount
 		}
@@ -89,19 +89,19 @@ func fromKubeContainerV1(container *v1.Container) (*Container, error) {
 
 	livenessProbe, err := probe.NewProbeFromKubeProbe(container.LivenessProbe)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "liveness probe")
 	}
 	mantleContainer.LivenessProbe = livenessProbe
 
 	readinessProbe, err := probe.NewProbeFromKubeProbe(container.ReadinessProbe)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "readiness probe")
 	}
 	mantleContainer.ReadinessProbe = readinessProbe
 
 	ports, err := fromKubeContainerPortsV1(container.Ports)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "container ports")
 	}
 	mantleContainer.Expose = ports
 
@@ -113,29 +113,26 @@ func fromKubeContainerV1(container *v1.Container) (*Container, error) {
 
 	envs, err := fromKubeEnvVarsV1(container.Env)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "env var")
 	}
 
 	envFroms, err := fromKubeEnvFromSourceV1(container.EnvFrom)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "env from source")
 	}
 
-	err = mergo.Merge(&envs, envFroms)
-	if err != nil {
-		return nil, err
-	}
+	envs = append(envs, envFroms...)
 	mantleContainer.Env = envs
 
 	volumeMounts, err := fromKubeVolumeMountsV1(container.VolumeMounts)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "volume mount")
 	}
 	mantleContainer.VolumeMounts = volumeMounts
 
 	volumeDevices, err := fromKubeVolumeDevicesV1(container.VolumeDevices)
 	if err != nil {
-		return nil, err
+		return nil, serrors.ContextualizeErrorf(err, "volume device")
 	}
 	mantleContainer.VolumeDevices = volumeDevices
 

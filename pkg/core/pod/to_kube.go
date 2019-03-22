@@ -50,6 +50,7 @@ func (pod *Pod) toKubeV1() (*v1.Pod, error) {
 	kubePod.Status.Phase = pod.toKubePodPhaseV1()
 	kubePod.Status.Message = pod.Msg
 	kubePod.Status.Reason = pod.Reason
+	kubePod.Status.NominatedNodeName = pod.NominatedName
 	kubePod.Status.HostIP = pod.NodeIP
 	kubePod.Status.PodIP = pod.IP
 	kubePod.Status.QOSClass = pod.toKubeQOSClassV1()

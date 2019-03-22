@@ -49,14 +49,15 @@ const (
 type Pod struct {
 	Version string `json:"version,omitempty"`
 
-	Conditions []PodCondition `json:"condition,omitempty"`
-	NodeIP     string         `json:"node_ip,omitempty"`
-	StartTime  *metav1.Time   `json:"start_time,omitempty"`
-	Msg        string         `json:"msg,omitempty"`
-	Phase      PodPhase       `json:"phase,omitempty"`
-	IP         string         `json:"ip,omitempty"`
-	QOS        PodQOSClass    `json:"qos,omitempty"`
-	Reason     string         `json:"reason,omitempty"`
+	Conditions    []PodCondition `json:"condition,omitempty"`
+	NodeIP        string         `json:"node_ip,omitempty"`
+	StartTime     *metav1.Time   `json:"start_time,omitempty"`
+	Msg           string         `json:"msg,omitempty"`
+	Phase         PodPhase       `json:"phase,omitempty"`
+	IP            string         `json:"ip,omitempty"`
+	QOS           PodQOSClass    `json:"qos,omitempty"`
+	Reason        string         `json:"reason,omitempty"`
+	NominatedName string         `json:"nominatedName,omitempty"`
 
 	PodTemplateMeta `json:",inline"`
 	PodTemplate     `json:",inline"`
